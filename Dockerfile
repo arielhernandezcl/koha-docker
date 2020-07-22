@@ -15,7 +15,7 @@ ARG KOHA_VERSION=19.11
 ARG PKG_URL=https://debian.koha-community.org/koha
 
 RUN if [ "${PKG_URL}" = "https://debian.koha-community.org/koha" ]; then \
-        wget -q -O- https://debian.koha-community.org/koha/gpg.asc | apt-key add - \
+        wget -q -O- https://debian.koha-community.org/koha/gpg.asc | apt-key add -; \
     fi
 
 RUN echo "deb ${PKG_URL} ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koha.list
