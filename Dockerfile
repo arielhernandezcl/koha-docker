@@ -25,7 +25,10 @@ RUN    apt update \
     && apt install -y koha-common \
     && apt clean
 
-RUN    a2enmod rewrite cgi \
+RUN    a2enmod rewrite \
+           headers \
+           proxy_http \
+           cgi \
     && a2dissite 000-default \
     && echo "Listen 8081\nListen 8080" > /etc/apache2/ports.conf
 
