@@ -9,7 +9,7 @@ Docker implementation of Koha
 ## How to use
 
 ```bash
-$ git clone https://gitlab.com/thekesolutions/koha-docker.git --depth 1 --branch 19.11
+$ git clone https://gitlab.com/koha-community/docker/koha-docker.git --depth 1 --branch master
 $ cd koha-docker
 $ docker-compose up -d
 ```
