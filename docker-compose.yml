@@ -1,7 +1,8 @@
 version: '3'
 services:
     db:
-        image: mysql:5.5
+        image: mariadb:10.3
+        restart: always
         env_file:
             - .env
         volumes:
@@ -22,7 +23,7 @@ services:
         networks:
             - kohanet
     apache2:
-        image: registry.gitlab.com/thekesolutions/koha:${KOHA_VERSION:-stable}
+        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
         env_file:
             - .env
@@ -45,7 +46,7 @@ services:
             - "8080:8080"
             - "8081:8081"
     sip:
-        image: registry.gitlab.com/thekesolutions/koha:${KOHA_VERSION:-stable}
+        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
         env_file:
             - .env
@@ -62,7 +63,7 @@ services:
         ports:
             - "6001:6001"
     z3950:
-        image: registry.gitlab.com/thekesolutions/koha:${KOHA_VERSION:-stable}
+        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
         env_file:
             - .env
@@ -79,7 +80,7 @@ services:
         ports:
             - "2100:2100"
     koha:
-        image: registry.gitlab.com/thekesolutions/koha:${KOHA_VERSION:-stable}
+        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         depends_on:
             - db
             - es
