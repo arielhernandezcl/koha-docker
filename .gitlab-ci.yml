@@ -9,7 +9,7 @@ stages:
 variables:
   DOCKER_HOST: tcp://docker:2375
   DOCKER_DRIVER: overlay2
-  BASEIMAGE: registry.gitlab.com/thekesolutions/koha
+  BASEIMAGE: registry.gitlab.com/koha-community/docker/koha-docker
 
 before_script:
   - docker login -u $PAUSER -p $PATOKEN registry.gitlab.com
