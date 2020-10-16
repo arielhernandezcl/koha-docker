@@ -33,7 +33,7 @@ services:
             - ALL
         environment:
             USE_APACHE2: 1
-            USE_PLACK: 0
+            USE_BACKEND: 0
             USE_SIP: 0
             USE_CRON: 0
             USE_Z3950: 0
@@ -54,7 +54,7 @@ services:
             - koha
         environment:
             USE_APACHE2: 0
-            USE_PLACK: 0
+            USE_BACKEND: 0
             USE_SIP: 1
             USE_CRON: 0
             USE_Z3950: 0
@@ -71,7 +71,7 @@ services:
             - koha
         environment:
             USE_APACHE2: 0
-            USE_PLACK: 0
+            USE_BACKEND: 0
             USE_SIP: 0
             USE_CRON: 1
             USE_Z3950: 0
@@ -86,7 +86,7 @@ services:
             - koha
         environment:
             USE_APACHE2: 0
-            USE_PLACK: 0
+            USE_BACKEND: 0
             USE_SIP: 0
             USE_CRON: 0
             USE_Z3950: 1
@@ -109,7 +109,7 @@ services:
             - .env
         environment:
             USE_APACHE2: 0
-            USE_PLACK: 1
+            USE_BACKEND: 1
             USE_SIP: 0
             USE_CRON: 0
             USE_Z3950: 0

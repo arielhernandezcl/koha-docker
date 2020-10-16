@@ -26,7 +26,7 @@ fi
 
 source /usr/share/koha/bin/koha-functions.sh
 
-if [ "${USE_PLACK}" = "1" ] || [ "${USE_PLACK}" = "true" ]
+if [ "${USE_BACKEND}" = "1" ] || [ "${USE_BACKEND}" = "true" ]
 then
     until mysql --user=root --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql -e "select 1" > /dev/null 2>&1; do
         echo "Waiting for database to be ready"
