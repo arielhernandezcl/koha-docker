@@ -62,6 +62,21 @@ services:
             kohanet:
         ports:
             - "6001:6001"
+    cron:
+        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
+        restart: always
+        env_file:
+            - .env
+        depends_on:
+            - koha
+        environment:
+            USE_APACHE2: 0
+            USE_PLACK: 0
+            USE_SIP: 0
+            USE_CRON: 1
+            USE_Z3950: 0
+        networks:
+            kohanet:
     z3950:
         image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
