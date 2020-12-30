@@ -20,7 +20,7 @@ build:
   stage: build
   script:
     - docker pull $BASEIMAGE:$CACHE_VERSION || true
-    - docker build --build-arg KOHA_VERSION=dev --cache-from $BASEIMAGE:$CACHE_VERSION -t $BASEIMAGE:$CI_COMMIT_TAG .
+    - docker build --build-arg KOHA_VERSION=$KOHA_VERSION --cache-from $BASEIMAGE:$CACHE_VERSION -t $BASEIMAGE:$CI_COMMIT_TAG .
     - docker tag $BASEIMAGE:$CI_COMMIT_TAG $BASEIMAGE:$CACHE_VERSION
     - docker push $BASEIMAGE:$CI_COMMIT_TAG
     - docker push $BASEIMAGE:$CACHE_VERSION
