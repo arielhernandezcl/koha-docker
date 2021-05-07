@@ -1,4 +1,6 @@
 FROM debian:stretch
+ARG KOHA_COMMMON_DEB_URL
+ENV KOHA_COMMON_DEB=$KOHA_COMMMON_DEB_URL
 
 LABEL maintainer="agustinmoyano@theke.io"
 
@@ -21,9 +23,16 @@ RUN if [ "${PKG_URL}" = "https://debian.koha-community.org/koha" ]; then \
 RUN echo "deb ${PKG_URL} ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koha.list
 
 # Install Koha
-RUN    apt update \
-    && apt install -y koha-common \
-    && apt clean
+RUN if [ -z "${KOHA_COMMMON_DEB}" ]; then \
+        apt update \
+         && apt install -y koha-common \
+         && apt clean \
+    ; else \
+        apt update \
+         && wget ${KOHA_COMMON_DEB} \
+         && dpkg -i koha-common*.deb \
+         && apt clean \
+    ; fi
 
 RUN    a2enmod rewrite \
            headers \
