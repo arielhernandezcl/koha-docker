@@ -10,7 +10,12 @@ export MEMCACHED_SERVERS=${MEMCACHED_SERVERS:-memcached:11211}
 export MYSQL_SERVER=${MYSQL_SERVER:-db}
 export MYSQL_PASSWORD=${MYSQL_PASSWORD:-$(pwgen -s 15 1)}
 export ZEBRA_MARC_FORMAT=${ZEBRA_MARC_FORMAT:-marc21}
+export MYSQL_ROOT_USER=${MYSQL_ROOT_USER:-root}
+export KOHA_LIB_SHARE=${KOHA_LIB_SHARE:-/tmp/libshare}
+export KOHA_PLACK_NAME=${KOHA_PLACK_NAME:-koha}
+export KOHA_ES_NAME=${KOHA_ES_NAME:-es}
 
+[ -d "$KOHA_LIB_SHARE" ] && [ ! "$(ls -A $KOHA_LIB_SHARE)" ] && cp -r /usr/share/koha/lib/* $KOHA_LIB_SHARE;
 
 envsubst < ./templates/koha-sites.conf > /etc/koha/koha-sites.conf
 envsubst < ./templates/koha-conf-site.xml.in > /etc/koha/koha-conf-site.xml.in
@@ -28,7 +33,20 @@ source /usr/share/koha/bin/koha-functions.sh
 
 if [ "${USE_BACKEND}" = "1" ] || [ "${USE_BACKEND}" = "true" ]
 then
-    until mysql --user=root --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql -e "select 1" > /dev/null 2>&1; do
+    CONNECTION_SUCCESSFUL=1
+    until [ "$CONNECTION_SUCCESSFUL" = "0" ]; do
+        mysql --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
+        CONNECTION_SUCCESSFUL=$?
+        if [ "$CONNECTION_SUCCESSFUL" != "0" ]; 
+        then
+            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
+            CONNECTION_SUCCESSFUL=$?
+        fi
+        if [ "$CONNECTION_SUCCESSFUL" != "0" ]; 
+        then
+            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql -e "select 1" > /dev/null 2>&1
+            CONNECTION_SUCCESSFUL=$?
+        fi
         echo "Waiting for database to be ready"
         sleep 1;
     done
@@ -40,21 +58,37 @@ then
     then
         echo "Creating instance ${KOHA_INSTANCE}"
         #try to connect to database
-        mysql --user=root --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
+        mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
 
-        if [ "$?" = "1" ]
+        if [ "$?" != "0" ]
         then
-            #Database not created
+            #Database or user not created
             echo "Creating database koha_${KOHA_INSTANCE}"
-            mysql --user=root --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql << EOF
-    CREATE DATABASE \`koha_${KOHA_INSTANCE}\`;
-    CREATE USER \`koha_${KOHA_INSTANCE}\`@'*' IDENTIFIED BY '${MYSQL_PASSWORD}';
-    GRANT ALL PRIVILEGES ON \`koha_${KOHA_INSTANCE}\`.* TO \`koha_${KOHA_INSTANCE}\`@'*';
+            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "CREATE DATABASE \`koha_${KOHA_INSTANCE}\`;"
+        fi
+
+        mysql --user=koha_${KOHA_INSTANCE} --password=${MYSQL_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
+
+        if [ "$?" != "0" ]
+        then
+            echo "Creating user koha_${KOHA_INSTANCE}"
+            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql << EOF
+    CREATE USER \`koha_${KOHA_INSTANCE}\`@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+    GRANT ALL PRIVILEGES ON \`koha_${KOHA_INSTANCE}\`.* TO \`koha_${KOHA_INSTANCE}\`@'%';
     FLUSH PRIVILEGES;   
 EOF
         fi
     fi
-        
+
+    if ! is_instance ${KOHA_INSTANCE} || [ ! -f "/etc/koha/sites/${KOHA_INSTANCE}/koha_conf.xml" ]
+    then
+        echo "Executing koha-create for instance ${KOHA_INSTANCE}"
+        koha-create --use-db ${KOHA_INSTANCE} | true
+    else
+        echo "Creating directories structure"
+        koha-create-dirs ${KOHA_INSTANCE}
+    fi
+
     envsubst < ./templates/supervisor/plack.conf > /etc/supervisor/conf.d/plack.conf
 
     if [ "${OVERRIDE_SYSPREF_SearchEngine}" != "Elasticsearch" ]
@@ -93,17 +127,9 @@ EOF
     fi
 fi
 
-if ! is_instance ${KOHA_INSTANCE} || [ ! -f "/etc/koha/sites/${KOHA_INSTANCE}/koha_conf.xml" ]
-then
-    echo "Executing koha-create for instance ${KOHA_INSTANCE}"
-    koha-create --use-db ${KOHA_INSTANCE} | true
-else
-    echo "Creating directories structure"
-    koha-create-dirs ${KOHA_INSTANCE}
-fi
-
 if [ "$USE_SIP" = "1" ] || [ "$USE_SIP" = "true" ]
 then
+
     echo "Configuring SIPServer"
     SIP_CONF_ACCOUNTS=''
     for ac in $SIP_ACCOUNTS
@@ -154,8 +180,13 @@ envsubst < ./templates/supervisor/supervisord.conf > /etc/supervisor/supervisord
 
 if [ "${USE_APACHE2}" = "1" ] || [ "${USE_APACHE2}" = "true" ]
 then
+    echo "Executing koha-create for instance ${KOHA_INSTANCE}"
+    koha-create --use-db ${KOHA_INSTANCE} | true
+
     koha-plack --enable ${KOHA_INSTANCE}
     envsubst < ./templates/supervisor/apache2.conf > /etc/supervisor/conf.d/apache2.conf
+
+    a2enmod proxy
 fi
 
 if [ "${USE_CRON}" = "1" ] || [ "${USE_CRON}" = "true" ]

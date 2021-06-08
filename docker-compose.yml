@@ -6,7 +6,7 @@ services:
         env_file:
             - .env
         volumes:
-            - ${DB_VOLUME:-db-data}:/var/lib/mysql
+            - ${DB_VOLUME:-db-data}:/var/lib/mysql:delegated
         networks:
             - kohanet
     es:
@@ -113,6 +113,9 @@ services:
             USE_SIP: 0
             USE_CRON: 0
             USE_Z3950: 0
+        volumes:
+            - ${INSTANCE_VOLUME:-inst-data}:/var/lib/koha:delegated
+            - ${ETC_VOLIME:-etc-data}:/etc/koha/sites:delegated
         ulimits:
             nofile:
                 soft: 65536
@@ -126,6 +129,8 @@ services:
             - kohanet
 volumes:
     db-data:
+    inst-data:
+    etc-data:
 networks:
     kohanet:
 
