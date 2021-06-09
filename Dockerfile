@@ -1,6 +1,6 @@
 FROM debian:buster
 
-ARG KOHA_COMMMON_DEB_URL
+ARG KOHA_COMMON_DEB_URL
 ARG KOHA_VERSION=21.05
 ARG PKG_URL=https://debian.koha-community.org/koha
 
@@ -22,7 +22,7 @@ RUN if [ "${PKG_URL}" = "https://debian.koha-community.org/koha" ]; then \
 RUN echo "deb ${PKG_URL} ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koha.list
 
 # Install Koha
-RUN if [ -z "${KOHA_COMMMON_DEB_URL}" ]; then \
+RUN if [ -z "${KOHA_COMMON_DEB_URL}" ]; then \
         apt update \
          && apt install -y koha-common \
          && apt clean \
