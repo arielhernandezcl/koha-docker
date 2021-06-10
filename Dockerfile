@@ -30,7 +30,7 @@ RUN if [ -z "${KOHA_COMMON_DEB_URL}" ]; then \
          && rm -rf /var/lib/apt/lists/* \
     ; else \
         apt update \
-         && apt install -y koha-common \
+         && apt install -y koha-common libreadonly-xs-perl\
          && wget ${KOHA_COMMON_DEB_URL} \
          && dpkg -i koha-common*.deb \
          && rm -f koha-common*.deb \
