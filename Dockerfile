@@ -13,7 +13,8 @@ RUN    apt update \
             apache2 \
             gnupg2 \
             apt-transport-https \
-    && apt clean
+    && rm -rf /var/cache/apt/archives/* \
+    && rm -rf /var/lib/apt/lists/*
 
 RUN if [ "${PKG_URL}" = "https://debian.koha-community.org/koha" ]; then \
         wget -q -O- https://debian.koha-community.org/koha/gpg.asc | apt-key add -; \
@@ -25,12 +26,16 @@ RUN echo "deb ${PKG_URL} ${KOHA_VERSION} main" | tee /etc/apt/sources.list.d/koh
 RUN if [ -z "${KOHA_COMMON_DEB_URL}" ]; then \
         apt update \
          && apt install -y koha-common \
-         && apt clean \
+         && rm -rf /var/cache/apt/archives/* \
+         && rm -rf /var/lib/apt/lists/* \
     ; else \
         apt update \
+         && apt install -y koha-common \
          && wget ${KOHA_COMMON_DEB_URL} \
          && dpkg -i koha-common*.deb \
-         && apt clean \
+         && rm -f koha-common*.deb \
+         && rm -rf /var/cache/apt/archives/* \
+         && rm -rf /var/lib/apt/lists/* \
     ; fi
 
 RUN a2enmod rewrite \
