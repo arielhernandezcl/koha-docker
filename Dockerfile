@@ -1,4 +1,4 @@
-FROM debian:buster
+FROM debian:bookworm
 
 ARG KOHA_COMMON_DEB_URL
 ARG KOHA_VERSION=21.05
