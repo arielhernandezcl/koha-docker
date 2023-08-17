@@ -19,8 +19,6 @@ export KOHA_ES_NAME=${KOHA_ES_NAME:-es}
 
 envsubst < ./templates/koha-sites.conf > /etc/koha/koha-sites.conf
 envsubst < ./templates/koha-conf-site.xml.in > /etc/koha/koha-conf-site.xml.in
-envsubst < ./templates/apache-shared-intranet-plack.conf > /etc/koha/apache-shared-intranet-plack.conf
-envsubst < ./templates/apache-shared-opac-plack.conf > /etc/koha/apache-shared-opac-plack.conf
 echo -n "${KOHA_INSTANCE}:koha_${KOHA_INSTANCE}:${MYSQL_PASSWORD}:koha_${KOHA_INSTANCE}:${MYSQL_SERVER}" > /etc/koha/passwd
 
 if [ ! -f "/usr/share/koha/bin/koha-functions.sh" ]

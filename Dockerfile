@@ -45,6 +45,10 @@ RUN a2enmod rewrite \
     && a2dissite 000-default \
     && echo "Listen 8081\nListen 8080" > /etc/apache2/ports.conf
 
+# Adjust apache configuration files
+RUN sed -e "s/unix.*\/\/localhost/http\:\/\/koha\:5000/g" /etc/koha/apache-shared-intranet-plack.conf > /etc/koha/apache-shared-intranet-plack.conf \
+    && sed -e "s/unix.*\/\/localhost/http\:\/\/koha\:5000/g" /etc/koha/apache-shared-opac-plack.conf  > /etc/koha/apache-shared-opac-plack.conf
+
 RUN mkdir /docker
 
 COPY run.sh /docker/run.sh
