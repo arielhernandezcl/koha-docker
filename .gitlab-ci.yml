@@ -11,7 +11,7 @@ variables:
   DOCKER_DRIVER: overlay2
   BASEIMAGE: registry.gitlab.com/koha-community/docker/koha-docker
   CACHE_VERSION: latest
-  KOHA_VERSION: 23.05
+  KOHA_VERSION: "23.05"
 
 before_script:
   - docker login -u $PAUSER -p $PATOKEN registry.gitlab.com
