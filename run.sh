@@ -1,5 +1,16 @@
 #!/bin/bash
 
+ts() {
+    date -Ins
+}
+
+log() {
+    echo $( ts ) "$@"
+}
+logerr() {
+    echo $( ts ) "$@" > /dev/stderr
+}
+
 #if no koha instance name was provided, then set it as "default"
 export KOHA_INSTANCE=${KOHA_INSTANCE:-default}
 
@@ -15,6 +26,8 @@ export KOHA_LIB_SHARE=${KOHA_LIB_SHARE:-/tmp/libshare}
 export KOHA_PLACK_NAME=${KOHA_PLACK_NAME:-koha}
 export KOHA_ES_NAME=${KOHA_ES_NAME:-es}
 
+log "Initialising koha instance $KOHA_INSTANCE"
+
 [ -d "$KOHA_LIB_SHARE" ] && [ ! "$(ls -A $KOHA_LIB_SHARE)" ] && cp -r /usr/share/koha/lib/* $KOHA_LIB_SHARE;
 
 envsubst < ./templates/koha-sites.conf > /etc/koha/koha-sites.conf
@@ -22,7 +35,7 @@ echo -n "${KOHA_INSTANCE}:koha_${KOHA_INSTANCE}:${MYSQL_PASSWORD}:koha_${KOHA_IN
 
 if [ ! -f "/usr/share/koha/bin/koha-functions.sh" ]
 then
-    echo "koha-functions should be present"
+    logerr "koha-functions should be present"
     exit 1
 fi
 
@@ -30,37 +43,17 @@ source /usr/share/koha/bin/koha-functions.sh
 
 if [ "${USE_BACKEND}" = "1" ] || [ "${USE_BACKEND}" = "true" ]
 then
-    CONNECTION_SUCCESSFUL=1
-    until [ "$CONNECTION_SUCCESSFUL" = "0" ]; do
-        mysql --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
-        CONNECTION_SUCCESSFUL=$?
-        if [ "$CONNECTION_SUCCESSFUL" != "0" ]; 
-        then
-            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
-            CONNECTION_SUCCESSFUL=$?
-        fi
-        if [ "$CONNECTION_SUCCESSFUL" != "0" ]; 
-        then
-            mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql -e "select 1" > /dev/null 2>&1
-            CONNECTION_SUCCESSFUL=$?
-        fi
-        echo "Waiting for database to be ready"
-        sleep 1;
-    done
-
-    echo "Database ready"
-
     #if there is no /var/lib/koha/<instance> directory, then we must install
     if ! is_instance ${KOHA_INSTANCE} || [ ! -f "/etc/koha/sites/${KOHA_INSTANCE}/koha_conf.xml" ]
     then
-        echo "Creating instance ${KOHA_INSTANCE}"
+        log "Creating instance ${KOHA_INSTANCE}"
         #try to connect to database
         mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "select 1" > /dev/null 2>&1
 
         if [ "$?" != "0" ]
         then
             #Database or user not created
-            echo "Creating database koha_${KOHA_INSTANCE}"
+            log "Creating database koha_${KOHA_INSTANCE}"
             mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e "CREATE DATABASE \`koha_${KOHA_INSTANCE}\`;"
         fi
 
@@ -68,7 +61,7 @@ then
 
         if [ "$?" != "0" ]
         then
-            echo "Creating user koha_${KOHA_INSTANCE}"
+            log "Creating user koha_${KOHA_INSTANCE}"
             mysql --user=${MYSQL_ROOT_USER} --password=${MYSQL_ROOT_PASSWORD} --host=${MYSQL_SERVER} mysql << EOF
     CREATE USER \`koha_${KOHA_INSTANCE}\`@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
     GRANT ALL PRIVILEGES ON \`koha_${KOHA_INSTANCE}\`.* TO \`koha_${KOHA_INSTANCE}\`@'%';
@@ -79,10 +72,10 @@ EOF
 
     if ! is_instance ${KOHA_INSTANCE} || [ ! -f "/etc/koha/sites/${KOHA_INSTANCE}/koha_conf.xml" ]
     then
-        echo "Executing koha-create for instance ${KOHA_INSTANCE}"
+        log "Executing koha-create for instance ${KOHA_INSTANCE}"
         koha-create --use-db ${KOHA_INSTANCE} | true
     else
-        echo "Creating directories structure"
+        log "Creating directories structure"
         koha-create-dirs ${KOHA_INSTANCE}
     fi
 
@@ -92,7 +85,7 @@ EOF
     then
         envsubst < ./templates/supervisor/zebra.conf > /etc/supervisor/conf.d/zebra.conf
     else
-        echo "Rebuilding elasticsearch indicies in the background"
+        log "Rebuilding elasticsearch indicies in the background"
         koha-elasticsearch --rebuild -p $(grep -c ^processor /proc/cpuinfo) ${KOHA_INSTANCE} &
     fi
 
@@ -100,26 +93,26 @@ EOF
     do
         if [ "${KOHA_LANGS}" = "" ] || ! echo "${KOHA_LANGS}"|grep -q -w $i
         then
-            echo "Removing language $i"
+            log "Removing language $i"
             koha-translate -r $i
         else
-            echo "Checking language $i"
+            log "Checking language $i"
             koha-translate -c $i
         fi
     done
 
     if [ "${KOHA_LANGS}" != "" ]
     then
-        echo "Installing languages"
+        log "Installing languages"
         LANGS=$(koha-translate -l)
         for i in $KOHA_LANGS
         do
             if ! echo "${LANGS}"|grep -q -w $i
             then
-                echo "Installing language $i"
+                log "Installing language $i"
                 koha-translate -i $i
             else
-                echo "Language $i already present"
+                log "Language $i already present"
             fi
         done
     fi
@@ -179,7 +172,7 @@ envsubst < ./templates/supervisor/supervisord.conf > /etc/supervisor/supervisord
 
 if [ "${USE_APACHE2}" = "1" ] || [ "${USE_APACHE2}" = "true" ]
 then
-    echo "Executing koha-create for instance ${KOHA_INSTANCE}"
+    log "Executing koha-create for instance ${KOHA_INSTANCE}"
     koha-create --use-db ${KOHA_INSTANCE} | true
 
     koha-plack --enable ${KOHA_INSTANCE}
