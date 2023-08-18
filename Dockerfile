@@ -1,7 +1,7 @@
 FROM debian:bookworm
 
 ARG KOHA_COMMON_DEB_URL
-ARG KOHA_VERSION=21.05
+ARG KOHA_VERSION=23.05
 ARG PKG_URL=https://debian.koha-community.org/koha
 
 LABEL maintainer="agustinmoyano@theke.io"

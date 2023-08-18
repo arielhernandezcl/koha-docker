@@ -1,3 +1,4 @@
+---
 version: '3'
 services:
     db:
@@ -22,13 +23,19 @@ services:
                 hard: -1
         networks:
             - kohanet
+        healthcheck:
+            test: ["CMD", "curl", "-f", "127.0.0.1:9200"]
+            interval: 10s
+            start_period: "2m"
+            start_interval: "5s"
     apache2:
         image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
         env_file:
             - .env
         depends_on:
-            - koha
+            koha:
+                condition: service_healthy
         cap_add:
             - ALL
         environment:
@@ -45,30 +52,14 @@ services:
         ports:
             - "8080:8080"
             - "8081:8081"
-    sip:
-        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
-        restart: always
-        env_file:
-            - .env
-        depends_on:
-            - koha
-        environment:
-            USE_APACHE2: 0
-            USE_BACKEND: 0
-            USE_SIP: 1
-            USE_CRON: 0
-            USE_Z3950: 0
-        networks:
-            kohanet:
-        ports:
-            - "6001:6001"
     cron:
         image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
         env_file:
             - .env
         depends_on:
-            - koha
+            koha:
+                condition: service_healthy
         environment:
             USE_APACHE2: 0
             USE_BACKEND: 0
@@ -77,29 +68,15 @@ services:
             USE_Z3950: 0
         networks:
             kohanet:
-    z3950:
-        image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
-        restart: always
-        env_file:
-            - .env
-        depends_on:
-            - koha
-        environment:
-            USE_APACHE2: 0
-            USE_BACKEND: 0
-            USE_SIP: 0
-            USE_CRON: 0
-            USE_Z3950: 1
-        networks:
-            kohanet:
-        ports:
-            - "2100:2100"
     koha:
         image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         depends_on:
-            - db
-            - es
-            - memcached
+            db:
+                condition: service_started
+            memcached:
+                condition: service_healthy
+            es:
+                condition: service_healthy
         cap_add:
             - ALL
         tmpfs:
@@ -122,15 +99,24 @@ services:
                 hard: 65536
         networks:
             kohanet:
+        healthcheck:
+            test: ["CMD", "test", "-f", "/healthy"]
+            interval: 10s
+            start_period: "2m"
+            start_interval: "5s"
     memcached:
         image: memcached
         command: memcached -m 64m
         networks:
             - kohanet
+        healthcheck:
+            test: ["CMD-SHELL", "/bin/bash -c 'exec 3<>/dev/tcp/localhost/11211; printf \"stats\nquit\n\" >&3'"]
+            interval: 10s
+            start_period: "2m"
+            start_interval: "5s"
 volumes:
     db-data:
     inst-data:
     etc-data:
 networks:
     kohanet:
-
