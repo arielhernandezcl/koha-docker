@@ -18,7 +18,6 @@ export KOHA_ES_NAME=${KOHA_ES_NAME:-es}
 [ -d "$KOHA_LIB_SHARE" ] && [ ! "$(ls -A $KOHA_LIB_SHARE)" ] && cp -r /usr/share/koha/lib/* $KOHA_LIB_SHARE;
 
 envsubst < ./templates/koha-sites.conf > /etc/koha/koha-sites.conf
-envsubst < ./templates/koha-conf-site.xml.in > /etc/koha/koha-conf-site.xml.in
 echo -n "${KOHA_INSTANCE}:koha_${KOHA_INSTANCE}:${MYSQL_PASSWORD}:koha_${KOHA_INSTANCE}:${MYSQL_SERVER}" > /etc/koha/passwd
 
 if [ ! -f "/usr/share/koha/bin/koha-functions.sh" ]
@@ -93,6 +92,7 @@ EOF
     then
         envsubst < ./templates/supervisor/zebra.conf > /etc/supervisor/conf.d/zebra.conf
     else
+        echo "Rebuilding elasticsearch indicies in the background"
         koha-elasticsearch --rebuild -p $(grep -c ^processor /proc/cpuinfo) ${KOHA_INSTANCE} &
     fi
 
@@ -123,6 +123,7 @@ EOF
             fi
         done
     fi
+    touch /healthy
 fi
 
 if [ "$USE_SIP" = "1" ] || [ "$USE_SIP" = "true" ]
