@@ -10,6 +10,11 @@ services:
             - ${DB_VOLUME:-db-data}:/var/lib/mysql:delegated
         networks:
             - kohanet
+        healthcheck:
+            test: ["CMD-SHELL", "mysql --user=${MYSQL_USER} --password=${MYSQL_PASSWORD} --host=${MYSQL_SERVER} koha_${KOHA_INSTANCE} -e 'select 1'"]
+            interval: 10s
+            start_period: "2m"
+            start_interval: "2s"
     es:
         image: koha/elasticsearch-icu
         environment:
@@ -27,7 +32,7 @@ services:
             test: ["CMD", "curl", "-f", "127.0.0.1:9200"]
             interval: 10s
             start_period: "2m"
-            start_interval: "5s"
+            start_interval: "2s"
     apache2:
         image: registry.gitlab.com/koha-community/docker/koha-docker/koha:${KOHA_VERSION:-stable}
         restart: always
